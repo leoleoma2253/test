@@ -1,0 +1,42 @@
+name: Sales Message Scraper
+
+on:
+  schedule:
+    - cron: "0 * * * *"   # runs hourly
+  workflow_dispatch: {}    # manual trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sales-message-scraper
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node (with npm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Cache Puppeteer browser store
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install
+        run: npm ci
+
+      - name: Run scraper
+        env:
+          SHEET_CSV_URL: ${{ secrets.SHEET_CSV_URL }}
+        run: npm start
