@@ -1,0 +1,15 @@
+{
+  "name": "sales-message-scraper",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node scraper.js"
+  },
+  "dependencies": {
+    "puppeteer": "24.19.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
