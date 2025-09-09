@@ -7,13 +7,12 @@ let SELECT_TIMEOUT_MS = 8000;
 let CONCURRENCY = 3;
 
 try {
-  // Optional local overrides if config.js exists (not required on CI)
   const local = await import('./config.js').catch(() => ({}));
   SHEET_CSV_URL ||= local.SHEET_CSV_URL;
   NAV_TIMEOUT_MS = local.NAV_TIMEOUT_MS ?? NAV_TIMEOUT_MS;
   SELECT_TIMEOUT_MS = local.SELECT_TIMEOUT_MS ?? SELECT_TIMEOUT_MS;
   CONCURRENCY = local.CONCURRENCY ?? CONCURRENCY;
-} catch { /* noop */ }
+} catch {}
 
 if (!SHEET_CSV_URL) {
   console.error('[CFG] Missing SHEET_CSV_URL (set repo secret or config.js).');
@@ -22,7 +21,6 @@ if (!SHEET_CSV_URL) {
 
 const log = (...a) => console.log('[SCRAPER]', ...a);
 
-// ---- utilities ----
 async function fetchCsv(url) {
   const res = await fetch(url, { redirect: 'follow' });
   if (!res.ok) throw new Error(`CSV fetch failed: ${res.status} ${res.statusText}`);
@@ -31,11 +29,10 @@ async function fetchCsv(url) {
 }
 
 function parseCsvToUrls(csvText) {
-  // Simple CSV: one URL per line (optionally with header). Skip empty lines.
   return csvText
     .split(/\r?\n/)
     .map(l => l.trim())
-    .filter(l => l && !/^https?:\/\//i.test(l) ? false : true);
+    .filter(l => !!l && /^https?:\/\//i.test(l));
 }
 
 function chunk(arr, size) {
@@ -44,9 +41,7 @@ function chunk(arr, size) {
   return out;
 }
 
-// ---- core page logic (runs in the page) ----
 async function extractSalesMessage(page) {
-  // Run in-page: compute salesMessage like your snippet
   const result = await page.evaluate(() => {
     try {
       const kachingElement = document.getElementsByClassName('kaching-bundles-product')[0];
@@ -58,7 +53,6 @@ async function extractSalesMessage(page) {
       } else {
         salesMessage = "No sales data found.";
       }
-      // also print inside browser console to verify capture (optional)
       console.log("Sales Message:", salesMessage);
       return { ok: true, salesMessage };
     } catch (error) {
@@ -66,17 +60,13 @@ async function extractSalesMessage(page) {
       return { ok: false, error: String(error) };
     }
   });
-
   return result;
 }
 
 async function processUrl(browser, url) {
   const page = await browser.newPage();
-
-  // pipe page console to runner logs
   page.on('console', msg => {
-    const args = msg.args().length ? ' ' + msg.args().map(a => a.toString()).join(' ') : '';
-    console.log(`[PAGE] ${msg.type().toUpperCase()}: ${msg.text()}${args}`);
+    console.log(`[PAGE] ${msg.type().toUpperCase()}: ${msg.text()}`);
   });
 
   try {
@@ -85,9 +75,6 @@ async function processUrl(browser, url) {
 
     log('Opening:', url);
     await page.goto(url, { waitUntil: ['domcontentloaded', 'networkidle2'], timeout: NAV_TIMEOUT_MS });
-
-    // Optional quick presence check; not required
-    // await page.waitForSelector('.kaching-bundles-product', { timeout: SELECT_TIMEOUT_MS }).catch(() => {});
 
     const res = await extractSalesMessage(page);
     if (res.ok) {
@@ -113,7 +100,12 @@ async function main() {
   }
 
   log(`Total URLs: ${urls.length}`);
-  const browser = await puppeteer.launch({ headless: true });
+
+  // 👉 Sandbox fix for GitHub Actions
+  const browser = await puppeteer.launch({
+    headless: true, // or 'new'
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
 
   try {
     const batches = chunk(urls, CONCURRENCY);
