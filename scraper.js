@@ -42,7 +42,7 @@ function chunk(arr, size) {
 }
 
 async function extractSalesMessage(page) {
-  const data
+  let data;
   const result = await page.evaluate(() => {
     try {
       const kachingElement = document.getElementsByClassName('kaching-bundles-product')[0];
