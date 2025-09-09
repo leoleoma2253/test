@@ -1,0 +1,6 @@
+// Copy this to config.js if you prefer hard-coding the CSV URL locally.
+// In GitHub Actions, we recommend using the SHEET_CSV_URL secret instead.
+export const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/REPLACE_ME/pub?output=csv";
+export const NAV_TIMEOUT_MS = 35000;   // navigation timeout per page
+export const SELECT_TIMEOUT_MS = 8000; // waitForSelector timeout
+export const CONCURRENCY = 3;          // how many pages at once
