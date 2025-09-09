@@ -42,12 +42,13 @@ function chunk(arr, size) {
 }
 
 async function extractSalesMessage(page) {
+  const data
   const result = await page.evaluate(() => {
     try {
       const kachingElement = document.getElementsByClassName('kaching-bundles-product')[0];
       let salesMessage = '';
       if (kachingElement) {
-        const data = JSON.parse(kachingElement.innerHTML);
+        data = JSON.parse(kachingElement.innerHTML);
         const sales = data["variants"].reduce((prev, el) => (el["inventoryQuantity"] * -1) + prev, 0);
         salesMessage = sales;
       } else {
