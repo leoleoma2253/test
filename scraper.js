@@ -53,7 +53,7 @@ async function extractSalesMessage(page) {
       } else {
         salesMessage = "No sales data found.";
       }
-      console.log("Sales Message:", salesMessage);
+      console.log("==============================================###############Sales Message:", salesMessage);
       return { ok: true, salesMessage };
     } catch (error) {
       console.error('Error checking sales:', error && (error.stack || error.message || String(error)));
